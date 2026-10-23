@@ -139,7 +139,7 @@ export default function CameraPage() {
             <div className="absolute -inset-2 rounded-2xl bg-gradient-to-tr from-[#d4af37] to-[#f5d77f] opacity-30 blur-md animate-pulse" />
             <div className="relative w-20 h-20 rounded-2xl p-1.5 bg-black/70 border border-[#d4af37]/40 shadow-2xl flex items-center justify-center">
               <img
-                src="/icon.png"
+                src={`${import.meta.env.BASE_URL}icon.png`}
                 alt="Galeri Nadillaar"
                 className="w-full h-full object-contain rounded-xl"
               />
@@ -182,7 +182,7 @@ export default function CameraPage() {
             title="Kembali ke Beranda Galeri Nadillaar"
           >
             <img
-              src="/icon.png"
+              src={`${import.meta.env.BASE_URL}icon.png`}
               alt="Logo"
               className="w-6 h-6 rounded-lg object-contain p-0.5 border border-[#d4af37]/30 bg-black/60 group-hover:scale-105 transition-transform"
             />

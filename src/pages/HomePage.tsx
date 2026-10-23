@@ -38,13 +38,31 @@ export default function HomePage() {
       return galeriMatch[1]
     }
 
+    // Match jika input adalah URL github.io/camera-galeri-nadillaar/:slug
+    const githubMatch = trimmed.match(/camera-galeri-nadillaar\/([a-zA-Z0-9_-]+)/i)
+    if (githubMatch && githubMatch[1]) {
+      return githubMatch[1]
+    }
+
     // Jika user langsung memasukkan kode unik (misal: 3dpudegf)
     const cleaned = trimmed.replace(/[^a-zA-Z0-9_-]/g, '')
     return cleaned
   }
 
+  const getBrandedUrl = (s: string) => {
+    if (!s) return ''
+    if (typeof window !== 'undefined') {
+      const origin = window.location.origin
+      const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+      if (origin.includes('github.io') || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return `${origin}${base}/${s}`
+      }
+    }
+    return `https://camera.galerinadillaar.com/${s}`
+  }
+
   const slug = extractSlug(rawInput)
-  const brandedUrl = slug ? `https://camera.galerinadillaar.com/${slug}` : ''
+  const brandedUrl = getBrandedUrl(slug)
 
   const handleOpenLive = (e: React.FormEvent) => {
     e.preventDefault()
@@ -92,7 +110,7 @@ export default function HomePage() {
 
           <div className="flex items-center justify-center gap-3 mb-3">
             <img
-              src="/icon.png"
+              src={`${import.meta.env.BASE_URL}icon.png`}
               alt="Galeri Nadillaar Logo"
               className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-contain shadow-lg border border-[#d4af37]/30 p-1 bg-black/40"
             />
