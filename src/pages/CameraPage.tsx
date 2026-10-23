@@ -6,9 +6,7 @@ import {
   Check,
   RefreshCw,
   AlertCircle,
-  Sparkles,
   ChevronUp,
-  ChevronDown,
 } from 'lucide-react'
 
 export default function CameraPage() {
@@ -20,7 +18,7 @@ export default function CameraPage() {
   const [copied, setCopied] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
 
-  // State untuk Top App Bar masking (dikontrol manual oleh user)
+  // State untuk Top App Bar masking (disembunyikan permanen saat logo di-tap)
   const [isBarHidden, setIsBarHidden] = useState(false)
 
   // Sanitasi slug
@@ -156,24 +154,34 @@ export default function CameraPage() {
           isBarHidden ? '-translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100 pointer-events-auto'
         }`}
       >
-        {/* Brand Logo & Name */}
-        <div className="flex items-center gap-2 sm:gap-2.5">
-          <img
-            src={`${import.meta.env.BASE_URL}icon.png`}
-            alt="Logo Galeri Nadillaar"
-            className="w-7 h-7 rounded-lg object-contain p-0.5 border border-[#d4af37]/35 bg-black/60 shadow-md"
-          />
-          <div className="flex flex-col text-left">
-            <span className="font-display text-xs sm:text-sm font-semibold gold-gradient-text leading-tight">
+        {/* Tombol Logo di Top untuk Menyembunyikan Bar Secara Permanen */}
+        <button
+          onClick={() => setIsBarHidden(true)}
+          title="Ketuk logo untuk membuka kamera penuh"
+          className="flex items-center gap-2 sm:gap-2.5 text-left group cursor-pointer focus:outline-none"
+        >
+          <div className="relative">
+            <img
+              src={`${import.meta.env.BASE_URL}icon.png`}
+              alt="Logo Galeri Nadillaar"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-contain p-0.5 border border-[#d4af37]/40 bg-black/70 shadow-md group-hover:scale-105 group-hover:border-[#f5d77f] transition-all"
+            />
+            <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#d4af37] flex items-center justify-center text-black shadow">
+              <ChevronUp className="w-2.5 h-2.5 stroke-[3]" />
+            </div>
+          </div>
+          <div className="flex flex-col">
+            <span className="font-display text-xs sm:text-sm font-semibold gold-gradient-text leading-tight group-hover:brightness-110">
               Galeri Nadillaar
             </span>
-            <span className="text-[9px] uppercase tracking-wider text-[#d4af37]/80">
-              Disposable Cam
+            <span className="text-[9px] uppercase tracking-wider text-[#d4af37]/80 flex items-center gap-1">
+              <span>Buka Kamera</span>
+              <span className="text-[8px] opacity-60">• tap logo</span>
             </span>
           </div>
-        </div>
+        </button>
 
-        {/* Right Actions & User Dismiss Button */}
+        {/* Right Actions */}
         <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Share Button */}
           <button
@@ -202,34 +210,10 @@ export default function CameraPage() {
           >
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
-
-          {/* User Action Button to Hide Top Bar & Open Full Camera */}
-          <button
-            onClick={() => setIsBarHidden(true)}
-            title="Sembunyikan header untuk melihat kamera penuh"
-            className="flex items-center gap-1.5 text-xs font-semibold text-black px-3 py-1.5 rounded-lg bg-[#d4af37] hover:bg-[#e5c158] active:scale-95 transition-all shadow-md cursor-pointer"
-          >
-            <Camera className="w-3.5 h-3.5 text-black" />
-            <span>Mulai Memotret</span>
-            <ChevronUp className="w-3.5 h-3.5 opacity-70" />
-          </button>
         </div>
       </header>
 
-      {/* 3. DISCREET TRIGGER UNTUK MEMUNCULKAN KEMBALI TOP BAR SAAT HIDDEN */}
-      {isBarHidden && (
-        <button
-          onClick={() => setIsBarHidden(false)}
-          title="Tampilkan kembali menu Galeri Nadillaar"
-          className="fixed top-2.5 right-2.5 z-40 px-3 py-1.5 rounded-full bg-black/75 hover:bg-black/90 text-[#f5d77f] border border-[#d4af37]/35 backdrop-blur-md text-[11px] font-medium flex items-center gap-1.5 shadow-xl opacity-70 hover:opacity-100 transition-all cursor-pointer"
-        >
-          <Sparkles className="w-3 h-3 text-[#d4af37]" />
-          <span>Menu</span>
-          <ChevronDown className="w-3.5 h-3.5" />
-        </button>
-      )}
-
-      {/* 4. FULLSCREEN CAMERA IFRAME */}
+      {/* 3. FULLSCREEN CAMERA IFRAME (Tidak ada tombol unhide lagi, 100% fullscreen bersih) */}
       <iframe
         key={reloadKey}
         src={targetUrl}
