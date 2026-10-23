@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Camera,
@@ -11,9 +11,6 @@ import {
   ChevronDown,
 } from 'lucide-react'
 
-// Durasi tampilan bar saat input form (14 detik)
-const AUTO_HIDE_SECONDS = 14
-
 export default function CameraPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
@@ -23,11 +20,8 @@ export default function CameraPage() {
   const [copied, setCopied] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
 
-  // State untuk Top App Bar masking
+  // State untuk Top App Bar masking (dikontrol manual oleh user)
   const [isBarHidden, setIsBarHidden] = useState(false)
-  const [secondsRemaining, setSecondsRemaining] = useState(AUTO_HIDE_SECONDS)
-  const autoHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const intervalTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Sanitasi slug
   const cleanSlug = (slug || '').trim().replace(/[^a-zA-Z0-9_-]/g, '')
@@ -52,32 +46,6 @@ export default function CameraPage() {
   }, [reloadKey])
 
   const isReady = iframeLoaded && minTimePassed
-
-  // Auto-hide Top App Bar setelah tamu diperkirakan selesai mengisi form nama
-  useEffect(() => {
-    if (!isReady || isBarHidden) return
-
-    // Countdown per detik
-    intervalTimerRef.current = setInterval(() => {
-      setSecondsRemaining((prev) => {
-        if (prev <= 1) {
-          if (intervalTimerRef.current) clearInterval(intervalTimerRef.current)
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-
-    // Auto dismiss timer
-    autoHideTimerRef.current = setTimeout(() => {
-      setIsBarHidden(true)
-    }, AUTO_HIDE_SECONDS * 1000)
-
-    return () => {
-      if (autoHideTimerRef.current) clearTimeout(autoHideTimerRef.current)
-      if (intervalTimerRef.current) clearInterval(intervalTimerRef.current)
-    }
-  }, [isReady, isBarHidden, reloadKey])
 
   // Muat ulang iframe dan reset tampilan
   const handleReload = () => {
@@ -184,7 +152,7 @@ export default function CameraPage() {
       {/* 2. SOLID TOP APP BAR MASKING (Menutupi logo bawaan saat form input) */}
       <header
         aria-label="Header Masking Galeri Nadillaar"
-        className={`fixed top-0 left-0 right-0 z-40 h-14 bg-[#0a0c10] border-b border-[#d4af37]/25 shadow-2xl px-3 sm:px-5 flex items-center justify-between transition-all duration-700 ease-in-out ${
+        className={`fixed top-0 left-0 right-0 z-40 h-14 bg-[#0a0c10] border-b border-[#d4af37]/25 shadow-2xl px-3 sm:px-5 flex items-center justify-between transition-all duration-500 ease-in-out ${
           isBarHidden ? '-translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100 pointer-events-auto'
         }`}
       >
@@ -205,7 +173,7 @@ export default function CameraPage() {
           </div>
         </div>
 
-        {/* Right Actions & Auto-Hide Dismiss Button */}
+        {/* Right Actions & User Dismiss Button */}
         <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Share Button */}
           <button
@@ -235,17 +203,15 @@ export default function CameraPage() {
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
 
-          {/* Dismiss / Minimize Bar Button */}
+          {/* User Action Button to Hide Top Bar & Open Full Camera */}
           <button
             onClick={() => setIsBarHidden(true)}
             title="Sembunyikan header untuk melihat kamera penuh"
-            className="flex items-center gap-1 text-[11px] font-medium text-[#f5d77f] hover:text-white px-2.5 py-1 rounded-lg bg-[#d4af37]/15 border border-[#d4af37]/30 hover:bg-[#d4af37]/30 active:scale-95 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 text-xs font-semibold text-black px-3 py-1.5 rounded-lg bg-[#d4af37] hover:bg-[#e5c158] active:scale-95 transition-all shadow-md cursor-pointer"
           >
-            <span>Tutup Bar</span>
-            <ChevronUp className="w-3.5 h-3.5" />
-            {secondsRemaining > 0 && (
-              <span className="text-[10px] text-stone-300">({secondsRemaining}s)</span>
-            )}
+            <Camera className="w-3.5 h-3.5 text-black" />
+            <span>Mulai Memotret</span>
+            <ChevronUp className="w-3.5 h-3.5 opacity-70" />
           </button>
         </div>
       </header>
@@ -255,11 +221,11 @@ export default function CameraPage() {
         <button
           onClick={() => setIsBarHidden(false)}
           title="Tampilkan kembali menu Galeri Nadillaar"
-          className="fixed top-2 right-2 z-40 px-2.5 py-1 rounded-full bg-black/60 hover:bg-black/85 text-[#f5d77f] border border-[#d4af37]/30 backdrop-blur-md text-[10px] font-medium flex items-center gap-1 shadow-lg opacity-60 hover:opacity-100 transition-all cursor-pointer"
+          className="fixed top-2.5 right-2.5 z-40 px-3 py-1.5 rounded-full bg-black/75 hover:bg-black/90 text-[#f5d77f] border border-[#d4af37]/35 backdrop-blur-md text-[11px] font-medium flex items-center gap-1.5 shadow-xl opacity-70 hover:opacity-100 transition-all cursor-pointer"
         >
-          <Sparkles className="w-2.5 h-2.5 text-[#d4af37]" />
+          <Sparkles className="w-3 h-3 text-[#d4af37]" />
           <span>Menu</span>
-          <ChevronDown className="w-3 h-3" />
+          <ChevronDown className="w-3.5 h-3.5" />
         </button>
       )}
 
