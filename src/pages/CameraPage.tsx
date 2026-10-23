@@ -1,16 +1,18 @@
-import { useState, useEffect } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import {
   Camera,
   Share2,
   Check,
-  Maximize2,
-  Minimize2,
-  Home,
   RefreshCw,
   AlertCircle,
   Sparkles,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react'
+
+// Durasi tampilan bar saat input form (14 detik)
+const AUTO_HIDE_SECONDS = 14
 
 export default function CameraPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -19,8 +21,13 @@ export default function CameraPage() {
   const [iframeLoaded, setIframeLoaded] = useState(false)
   const [minTimePassed, setMinTimePassed] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [isFullscreen, setIsFullscreen] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
+
+  // State untuk Top App Bar masking
+  const [isBarHidden, setIsBarHidden] = useState(false)
+  const [secondsRemaining, setSecondsRemaining] = useState(AUTO_HIDE_SECONDS)
+  const autoHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const intervalTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Sanitasi slug
   const cleanSlug = (slug || '').trim().replace(/[^a-zA-Z0-9_-]/g, '')
@@ -44,23 +51,43 @@ export default function CameraPage() {
     return () => clearTimeout(timer)
   }, [reloadKey])
 
-  // Listener fullscreen change
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-    }
-    document.addEventListener('fullscreenchange', handleFullscreenChange)
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
-  }, [])
+  const isReady = iframeLoaded && minTimePassed
 
-  // Fungsi reload iframe
+  // Auto-hide Top App Bar setelah tamu diperkirakan selesai mengisi form nama
+  useEffect(() => {
+    if (!isReady || isBarHidden) return
+
+    // Countdown per detik
+    intervalTimerRef.current = setInterval(() => {
+      setSecondsRemaining((prev) => {
+        if (prev <= 1) {
+          if (intervalTimerRef.current) clearInterval(intervalTimerRef.current)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    // Auto dismiss timer
+    autoHideTimerRef.current = setTimeout(() => {
+      setIsBarHidden(true)
+    }, AUTO_HIDE_SECONDS * 1000)
+
+    return () => {
+      if (autoHideTimerRef.current) clearTimeout(autoHideTimerRef.current)
+      if (intervalTimerRef.current) clearInterval(intervalTimerRef.current)
+    }
+  }, [isReady, isBarHidden, reloadKey])
+
+  // Muat ulang iframe dan reset tampilan
   const handleReload = () => {
     setIframeLoaded(false)
     setMinTimePassed(false)
+    setIsBarHidden(false)
     setReloadKey((prev) => prev + 1)
   }
 
-  // Fungsi share atau copy URL
+  // Bagikan link kamera
   const handleShare = async () => {
     const shareUrl = window.location.href
     if (navigator.share) {
@@ -72,7 +99,7 @@ export default function CameraPage() {
         })
         return
       } catch {
-        // Fallback ke clipboard jika dibatalkan/error
+        // Fallback jika dibatalkan
       }
     }
 
@@ -82,15 +109,6 @@ export default function CameraPage() {
       setTimeout(() => setCopied(false), 2000)
     } catch {
       // Ignore
-    }
-  }
-
-  // Toggle fullscreen
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {})
-    } else {
-      document.exitFullscreen().catch(() => {})
     }
   }
 
@@ -108,16 +126,14 @@ export default function CameraPage() {
           </p>
           <button
             onClick={() => navigate('/')}
-            className="w-full py-3 rounded-xl bg-[#d4af37] text-black font-semibold hover:bg-[#e5c158] transition-colors"
+            className="w-full py-3 rounded-xl bg-[#d4af37] text-black font-semibold hover:bg-[#e5c158] transition-colors cursor-pointer"
           >
-            Kembali ke Generator
+            Kembali ke Beranda
           </button>
         </div>
       </div>
     )
   }
-
-  const isReady = iframeLoaded && minTimePassed
 
   return (
     <main
@@ -130,11 +146,9 @@ export default function CameraPage() {
           isReady ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'
         }`}
       >
-        {/* Subtle radial background glow */}
         <div className="absolute w-72 h-72 rounded-full bg-[#d4af37]/10 blur-3xl pointer-events-none animate-pulse" />
 
         <div className="relative z-10 flex flex-col items-center text-center max-w-xs">
-          {/* Logo with animated ring */}
           <div className="relative mb-6">
             <div className="absolute -inset-2 rounded-2xl bg-gradient-to-tr from-[#d4af37] to-[#f5d77f] opacity-30 blur-md animate-pulse" />
             <div className="relative w-20 h-20 rounded-2xl p-1.5 bg-black/70 border border-[#d4af37]/40 shadow-2xl flex items-center justify-center">
@@ -153,13 +167,11 @@ export default function CameraPage() {
             Disposable Wedding Camera
           </p>
 
-          {/* Elegant Circular Spinner */}
           <div className="flex items-center gap-2 mb-8">
             <div className="w-5 h-5 border-2 border-[#d4af37]/20 border-t-[#d4af37] rounded-full animate-spin" />
             <span className="text-xs text-stone-300">Menyiapkan kamera...</span>
           </div>
 
-          {/* Camera Permission Advisory */}
           <div className="w-full p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm text-left flex items-start gap-2.5">
             <Camera className="w-4 h-4 text-[#d4af37] shrink-0 mt-0.5" />
             <p className="text-[11px] leading-relaxed text-stone-300">
@@ -169,94 +181,89 @@ export default function CameraPage() {
         </div>
       </div>
 
-      {/* 2. BRANDED FLOATING HEADER BAR */}
-      <div className="fixed top-0 left-0 right-0 z-40 p-3 sm:p-4 flex justify-center pointer-events-none">
-        <header
-          aria-label="Navigasi Kamera"
-          className="pointer-events-auto inline-flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 rounded-full glass-panel gold-border-glow shadow-2xl transition-all hover:border-[#d4af37]/40 max-w-[95vw]"
-        >
-          {/* Logo & Brand Name */}
-          <Link
-            to="/"
-            className="flex items-center gap-2 group pr-1"
-            title="Kembali ke Beranda Galeri Nadillaar"
-          >
-            <img
-              src={`${import.meta.env.BASE_URL}icon.png`}
-              alt="Logo"
-              className="w-6 h-6 rounded-lg object-contain p-0.5 border border-[#d4af37]/30 bg-black/60 group-hover:scale-105 transition-transform"
-            />
-            <div className="flex flex-col text-left">
-              <span className="font-display text-xs sm:text-sm font-semibold gold-gradient-text leading-tight group-hover:brightness-110">
-                Galeri Nadillaar
-              </span>
-            </div>
-          </Link>
-
-          {/* Pill Badge */}
-          <span className="hidden xs:inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#d4af37]/15 text-[#f5d77f] border border-[#d4af37]/30">
-            <Sparkles className="w-2.5 h-2.5 text-[#d4af37]" />
-            Live Cam
-          </span>
-
-          <div className="h-4 w-px bg-white/15 mx-0.5" />
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-1 sm:gap-1.5">
-            {/* Share / Copy Button */}
-            <button
-              onClick={handleShare}
-              title="Bagikan link kamera ini"
-              className="p-1.5 sm:px-2.5 sm:py-1 rounded-full text-stone-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all text-xs flex items-center gap-1.5 cursor-pointer"
-            >
-              {copied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="hidden sm:inline text-emerald-400 font-medium">Tersalin</span>
-                </>
-              ) : (
-                <>
-                  <Share2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Bagikan</span>
-                </>
-              )}
-            </button>
-
-            {/* Reload iframe */}
-            <button
-              onClick={handleReload}
-              title="Muat ulang kamera"
-              className="p-1.5 rounded-full text-stone-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
-
-            {/* Fullscreen Toggle */}
-            <button
-              onClick={toggleFullscreen}
-              title={isFullscreen ? 'Keluar Layar Penuh' : 'Layar Penuh'}
-              className="p-1.5 rounded-full text-stone-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer hidden sm:flex"
-            >
-              {isFullscreen ? (
-                <Minimize2 className="w-3.5 h-3.5" />
-              ) : (
-                <Maximize2 className="w-3.5 h-3.5" />
-              )}
-            </button>
-
-            {/* Back to Home */}
-            <Link
-              to="/"
-              title="Kembali ke generator"
-              className="p-1.5 rounded-full text-stone-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all"
-            >
-              <Home className="w-3.5 h-3.5" />
-            </Link>
+      {/* 2. SOLID TOP APP BAR MASKING (Menutupi logo bawaan saat form input) */}
+      <header
+        aria-label="Header Masking Galeri Nadillaar"
+        className={`fixed top-0 left-0 right-0 z-40 h-14 bg-[#0a0c10] border-b border-[#d4af37]/25 shadow-2xl px-3 sm:px-5 flex items-center justify-between transition-all duration-700 ease-in-out ${
+          isBarHidden ? '-translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100 pointer-events-auto'
+        }`}
+      >
+        {/* Brand Logo & Name */}
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          <img
+            src={`${import.meta.env.BASE_URL}icon.png`}
+            alt="Logo Galeri Nadillaar"
+            className="w-7 h-7 rounded-lg object-contain p-0.5 border border-[#d4af37]/35 bg-black/60 shadow-md"
+          />
+          <div className="flex flex-col text-left">
+            <span className="font-display text-xs sm:text-sm font-semibold gold-gradient-text leading-tight">
+              Galeri Nadillaar
+            </span>
+            <span className="text-[9px] uppercase tracking-wider text-[#d4af37]/80">
+              Disposable Cam
+            </span>
           </div>
-        </header>
-      </div>
+        </div>
 
-      {/* 3. FULLSCREEN CAMERA IFRAME */}
+        {/* Right Actions & Auto-Hide Dismiss Button */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Share Button */}
+          <button
+            onClick={handleShare}
+            title="Bagikan link kamera"
+            className="p-1.5 sm:px-2.5 sm:py-1 rounded-lg text-stone-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all text-xs flex items-center gap-1 cursor-pointer"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="hidden sm:inline text-emerald-400 font-medium">Tersalin</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Bagikan</span>
+              </>
+            )}
+          </button>
+
+          {/* Reload Button */}
+          <button
+            onClick={handleReload}
+            title="Muat ulang kamera"
+            className="p-1.5 rounded-lg text-stone-300 hover:text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Dismiss / Minimize Bar Button */}
+          <button
+            onClick={() => setIsBarHidden(true)}
+            title="Sembunyikan header untuk melihat kamera penuh"
+            className="flex items-center gap-1 text-[11px] font-medium text-[#f5d77f] hover:text-white px-2.5 py-1 rounded-lg bg-[#d4af37]/15 border border-[#d4af37]/30 hover:bg-[#d4af37]/30 active:scale-95 transition-all cursor-pointer"
+          >
+            <span>Tutup Bar</span>
+            <ChevronUp className="w-3.5 h-3.5" />
+            {secondsRemaining > 0 && (
+              <span className="text-[10px] text-stone-300">({secondsRemaining}s)</span>
+            )}
+          </button>
+        </div>
+      </header>
+
+      {/* 3. DISCREET TRIGGER UNTUK MEMUNCULKAN KEMBALI TOP BAR SAAT HIDDEN */}
+      {isBarHidden && (
+        <button
+          onClick={() => setIsBarHidden(false)}
+          title="Tampilkan kembali menu Galeri Nadillaar"
+          className="fixed top-2 right-2 z-40 px-2.5 py-1 rounded-full bg-black/60 hover:bg-black/85 text-[#f5d77f] border border-[#d4af37]/30 backdrop-blur-md text-[10px] font-medium flex items-center gap-1 shadow-lg opacity-60 hover:opacity-100 transition-all cursor-pointer"
+        >
+          <Sparkles className="w-2.5 h-2.5 text-[#d4af37]" />
+          <span>Menu</span>
+          <ChevronDown className="w-3 h-3" />
+        </button>
+      )}
+
+      {/* 4. FULLSCREEN CAMERA IFRAME */}
       <iframe
         key={reloadKey}
         src={targetUrl}
